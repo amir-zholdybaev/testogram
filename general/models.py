@@ -9,6 +9,9 @@ class User(AbstractUser):
         blank=True,
     )
 
+    def __str__(self):
+        return f"{self.username}"
+
 
 class Post(models.Model):
     author = models.ForeignKey(
@@ -19,6 +22,9 @@ class Post(models.Model):
     title = models.CharField(max_length=64)
     body = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"({self.id}) {self.title}"
 
 
 class Comment(models.Model):
@@ -34,6 +40,9 @@ class Comment(models.Model):
         related_name="comments",
     )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.body}, id: {self.id}"
 
 
 class Reaction(models.Model):
