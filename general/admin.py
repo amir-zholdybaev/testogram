@@ -97,6 +97,22 @@ class UserModelAdmin(admin.ModelAdmin):
 
 @admin.register(Post)
 class PostModelAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("comments")
+    
+    def get_body(self, obj):
+        max_length = 64
+        if len(obj.body) > max_length:
+            return obj.body[:61] + "..."
+        return obj.body
+
+    get_body.short_description = "body"
+
+    def get_comment_count(self, obj):
+        return obj.comments.count()
+    
+    get_comment_count.short_description = "comment count"
+
     list_display = (
         "id",
         "author",
@@ -120,18 +136,9 @@ class PostModelAdmin(admin.ModelAdmin):
         ("created_at", DateRangeFilter),
     )
 
-    def get_body(self, obj):
-        max_length = 64
-        if len(obj.body) > max_length:
-            return obj.body[:61] + "..."
-        return obj.body
-
-    get_body.short_description = "body"
-
-    def get_comment_count(self, obj):
-        return obj.comments.count()
-    
-    get_comment_count.short_description = "comment count"
+    raw_id_fields = (
+        "author",
+    )
 
 
 @admin.register(Comment)
@@ -169,6 +176,14 @@ class CommentModelAdmin(admin.ModelAdmin):
         PostFilter,
     )
 
+    autocomplete_fields = (
+        "post",
+    )
+
+    raw_id_fields = (
+        "author",
+    )
+
 
 @admin.register(Reaction)
 class ReactionModelAdmin(admin.ModelAdmin):
@@ -193,4 +208,9 @@ class ReactionModelAdmin(admin.ModelAdmin):
         PostFilter,
         AuthorFilter,
         ("value", ChoiceDropdownFilter),
+    )
+
+    autocomplete_fields = (
+        "author",
+        "post",
     )
