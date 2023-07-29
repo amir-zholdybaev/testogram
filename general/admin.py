@@ -4,6 +4,7 @@ from general.models import (
     User,
     Comment,
     Reaction,
+    Chat,
 )
 from django.contrib.auth.models import Group
 from rangefilter.filters import DateRangeFilter
@@ -213,4 +214,18 @@ class ReactionModelAdmin(admin.ModelAdmin):
     autocomplete_fields = (
         "author",
         "post",
+    )
+
+
+@admin.register(Chat)
+class ChatModelAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "user_1",
+        "user_2",
+    )
+
+    fields = (
+        "user_1",
+        "user_2",
     )
