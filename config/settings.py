@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'admin_auto_filters',
     'django_admin_listfilter_dropdown',
     'drf_spectacular',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
