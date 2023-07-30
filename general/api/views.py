@@ -17,8 +17,10 @@ from general.api.serializers import(
     ChatSerializer,
     MessageListSerializer,
     ChatListSerializer,
+    MessageSerializer,
 )
-from general.models import User, Post, Comment, Reaction, Chat, Message, OuterRef, Subquery
+from general.models import User, Post, Comment, Reaction, Chat, Message
+from django.db.models import OuterRef, Subquery
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -181,3 +183,18 @@ class ChatViewSet(
         ).order_by("-created_at")
         serializer = self.get_serializer(messages, many=True)
         return Response(serializer.data)
+
+
+class MessageViewSet(
+    CreateModelMixin,
+    DestroyModelMixin,
+    GenericViewSet,
+):
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = Message.objects.all().order_by("-id")
+
+    def perform_destroy(self, instance):
+        if instance.author != self.request.user:
+            raise PermissionDenied("Вы не являетесь автором этого сообщения.")
+        instance.delete()
