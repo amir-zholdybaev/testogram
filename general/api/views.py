@@ -16,14 +16,15 @@ from general.api.serializers import(
     ReactionSerializer,
     ChatSerializer,
     MessageListSerializer,
+    ChatListSerializer,
 )
-from general.models import User, Post, Comment, Reaction
+from general.models import User, Post, Comment, Reaction, Chat, Message, OuterRef, Subquery
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Case, When, CharField, F
+from django.db.models import Case, When, CharField, F, Q
 
 
 class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin, GenericViewSet):
@@ -133,14 +134,40 @@ class ReactionViewSet(
 
 class ChatViewSet(
     CreateModelMixin,
+    ListModelMixin,
+    DestroyModelMixin,
     GenericViewSet,
 ):
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
+        if self.action == "list":
+            return ChatListSerializer
         if self.action == "messages":
             return MessageListSerializer
         return ChatSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+
+        last_message_subquery = Message.objects.filter(
+            chat=OuterRef('pk')
+        ).order_by('-created_at').values('created_at')[:1]
+        last_message_content_subquery = Message.objects.filter(
+            chat=OuterRef('pk')
+        ).order_by('-created_at').values('content')[:1]
+
+        qs = Chat.objects.filter(
+            Q(user_1=user) | Q(user_2=user),
+            messages__isnull=False,
+        ).annotate(
+            last_message_datetime=Subquery(last_message_subquery),
+            last_message_content=Subquery(last_message_content_subquery),
+        ).select_related(
+            "user_1",
+            "user_2",
+        ).order_by("-last_message_datetime").distinct()
+        return qs
 
     @action(detail=True, methods=["get"])
     def messages(self, request, pk=None):
