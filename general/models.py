@@ -41,8 +41,8 @@ class Comment(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"{self.body}, id: {self.id}"
+    # def __str__(self):
+    #     return f"{self.body}, id: {self.id}"
 
 
 class Reaction(models.Model):
