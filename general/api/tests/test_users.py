@@ -138,25 +138,20 @@ class UserTestCase(APITestCase):
         self.user.refresh_from_db()
         self.assertTrue(friend not in self.user.friends.all())
     
-    def test_retrieve_user(self):
-        target_user = UserFactory()
-
-        # friends
+    def _retrieve(self, target_user, url, is_friend):
+        if url == f"{self.url}me/":
+            self.client.force_authenticate(user=target_user)
+        
         target_user.friends.add(self.user)
         target_user.friends.add(UserFactory())
         target_user.save()
 
-        # posts
         post_1 = PostFactory(author=target_user, title="Post 1")
         post_2 = PostFactory(author=target_user, title="Post 2")
 
-        # other posts
         PostFactory.create_batch(10)
 
-        response = self.client.get(
-            path=f"{self.url}{target_user.pk}/",
-            format="json",
-        )
+        response = self.client.get(path=url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         expected_data = {
@@ -164,7 +159,7 @@ class UserTestCase(APITestCase):
             "first_name": target_user.first_name,
             "last_name": target_user.last_name,
             "email": target_user.email,
-            "is_friend": True,
+            "is_friend": is_friend,
             "friend_count": 2,
             "posts": [
                 {
@@ -184,6 +179,15 @@ class UserTestCase(APITestCase):
         response_data = dict(response.data)
 
         self.assertDictEqual(expected_data, response_data)
+    
+    def test_retrieve_user(self):
+        target_user = UserFactory()
+
+        self._retrieve(
+            target_user=target_user,
+            url=f"{self.url}{target_user.pk}/",
+            is_friend=True
+        )
 
     def test_get_user_friends(self):
         target_user = UserFactory()
@@ -227,48 +231,9 @@ class UserTestCase(APITestCase):
     
     def test_me(self):
         target_user = UserFactory()
-        self.client.force_authenticate(user=target_user)
 
-        # friends
-        target_user.friends.add(self.user)
-        target_user.friends.add(UserFactory())
-        target_user.save()
-
-        # posts
-        post_1 = PostFactory(author=target_user, title="Post 1")
-        post_2 = PostFactory(author=target_user, title="Post 2")
-
-        # other posts
-        PostFactory.create_batch(10)
-
-        response = self.client.get(
-            path=f"{self.url}me/",
-            format="json",
+        self._retrieve(
+            target_user=target_user,
+            url=f"{self.url}me/",
+            is_friend=False
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        expected_data = {
-            "id": target_user.pk,
-            "first_name": target_user.first_name,
-            "last_name": target_user.last_name,
-            "email": target_user.email,
-            "is_friend": False,
-            "friend_count": 2,
-            "posts": [
-                {
-                    "id": post_1.pk,
-                    "title": post_1.title,
-                    "body": post_1.body,
-                    "created_at": post_1.created_at.strftime("%Y-%m-%dT%H:%M:%S"),
-                },
-                {
-                    "id": post_2.pk,
-                    "title": post_2.title,
-                    "body": post_2.body,
-                    "created_at": post_2.created_at.strftime("%Y-%m-%dT%H:%M:%S"),
-                },
-            ],
-        }
-        response_data = dict(response.data)
-
-        self.assertDictEqual(expected_data, response_data)
