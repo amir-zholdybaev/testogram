@@ -1,8 +1,6 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from general.factories import UserFactory, PostFactory
-import json
-from django.core.serializers.json import DjangoJSONEncoder
 from django.contrib.auth.hashers import check_password
 from general.models import User
 

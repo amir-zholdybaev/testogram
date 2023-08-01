@@ -1,9 +1,7 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
-from general.models import Post
-from general.factories import UserFactory, PostFactory
-import json
-from django.core.serializers.json import DjangoJSONEncoder
+from general.models import Post, Reaction
+from general.factories import UserFactory, PostFactory, ReactionFactory
 
 
 class PostTestCase(APITestCase):
@@ -12,7 +10,7 @@ class PostTestCase(APITestCase):
         self.client.force_authenticate(user=self.user)
 
         self.url = "/api/posts/"
-    
+
     # def _unauthorized_post_request(self, url, data):
     #     self.client.logout()
 
@@ -76,12 +74,7 @@ class PostTestCase(APITestCase):
         response = self.client.get(path=self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        response_data = json.loads(
-            json.dumps(
-                response.data["results"][0],
-                cls=DjangoJSONEncoder,
-            )
-        )
+        response_data = dict(response.data["results"][0])
 
         author = post.author
         expected_data = {
@@ -99,5 +92,44 @@ class PostTestCase(APITestCase):
             ),
             "created_at": post.created_at.strftime("%Y-%m-%dT%H:%M:%S"),
         }
-
         self.assertDictEqual(expected_data, response_data)
+
+    def test_retrieve_structure(self):
+        post = PostFactory()
+        author = post.author
+        reaction = ReactionFactory(
+            author=self.user,
+            post=post,
+            value=Reaction.Values.HEART,
+        )
+
+        response = self.client.get(
+            path=f"{self.url}{post.pk}/",
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_data = dict(response.data)
+        expected_data = {
+            "id": post.pk,
+            "author": {
+                "id": author.pk,
+                "first_name": author.first_name,
+                "last_name": author.last_name,
+            },
+            "title": post.title,
+            "body": post.body,
+            "my_reaction": reaction.value,
+            "created_at": post.created_at.strftime("%Y-%m-%dT%H:%M:%S"),
+        }
+        self.assertDictEqual(expected_data, response_data)
+
+    def test_retrieve_structure_without_own_reaction(self):
+        post = PostFactory()
+
+        response = self.client.get(
+            path=f"{self.url}{post.pk}/",
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["my_reaction"], "")
