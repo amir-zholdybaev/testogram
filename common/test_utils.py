@@ -11,10 +11,10 @@ def convert_response_data_to_dict(data):
     This is useful for converting data to JSON format.
 
     ## Arguments:
-    - `data`: any data structure that can be converted into a dictionary.
+    - `data`: any data structure that can be converted into a json.
 
     ## Returns:
-    - A dictionary representation of data.
+    - Any python structure that can be obtained from json.
 
     ## Example:
     >>> from collections import OrderedDict
