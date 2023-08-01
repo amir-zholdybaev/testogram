@@ -32,7 +32,12 @@ class UserListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "first_name", "last_name", "is_friend")
+        fields = (
+            "id",
+            "first_name",
+            "last_name",
+            "is_friend"
+        )
     
     def get_is_friend(self, obj) -> bool:
         current_user = self.context["request"].user

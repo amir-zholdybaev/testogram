@@ -115,7 +115,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'ru'
 
-TIME_ZONE = 'Asia/Almaty'
+TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
@@ -143,6 +143,7 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
+    'DATETIME_FORMAT': "%Y-%m-%dT%H:%M:%S",
 }
 
 SPECTACULAR_SETTINGS = {
