@@ -20,7 +20,7 @@ from general.api.serializers import(
     MessageSerializer,
 )
 from general.models import User, Post, Comment, Reaction, Chat, Message
-from django.db.models import OuterRef, Subquery
+from django.db.models import OuterRef, Subquery, Value
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -176,7 +176,7 @@ class ChatViewSet(
         chat = self.get_object()
         messages = chat.messages.all().annotate(
             message_author=Case(
-                When(author=self.request.user, then="Вы"),
+                When(author=self.request.user, then=Value("Вы")),
                 default=F("author__first_name"),
                 output_field=CharField(),
             )
