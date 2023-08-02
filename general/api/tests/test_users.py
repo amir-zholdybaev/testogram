@@ -23,15 +23,13 @@ class UserTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
 
-        response_data = dict(response.data["results"][0])
-
         expected_data = {
             "id": self.user.pk,
             "first_name": self.user.first_name,
             "last_name": self.user.last_name,
             "is_friend": False,
         }
-        self.assertDictEqual(response_data, expected_data)
+        self.assertDictEqual(expected_data, response.data["results"][0])
     
     def test_user_list_is_friend_field(self):
         users = UserFactory.create_batch(5)
@@ -174,9 +172,8 @@ class UserTestCase(APITestCase):
                 },
             ],
         }
-        response_data = dict(response.data)
 
-        self.assertDictEqual(expected_data, response_data)
+        self.assertDictEqual(expected_data, response.data)
     
     def test_retrieve_user(self):
         target_user = UserFactory()
@@ -217,15 +214,13 @@ class UserTestCase(APITestCase):
         response = self.client.get(path=url, format="json")
         self.assertEqual(len(response.data["results"]), 1)
 
-        response_data = dict(response.data["results"][0])
-
         expected_data = {
             "id": friend.pk,
             "first_name": friend.first_name,
             "last_name": friend.last_name,
             "is_friend": False,
         }
-        self.assertDictEqual(response_data, expected_data)
+        self.assertDictEqual(expected_data, response.data["results"][0])
     
     def test_me(self):
         target_user = UserFactory()

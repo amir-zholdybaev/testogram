@@ -27,7 +27,7 @@ class PostTestCase(APITestCase):
 
     #     response = self.client.get(path=url, format="json")
     #     self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-    #     self.assertEqual("results" in response.data, False)
+    #     self.assertNotIn("results", response.data)
 
     def test_create_post(self):
         data = {
@@ -74,8 +74,6 @@ class PostTestCase(APITestCase):
         response = self.client.get(path=self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        response_data = dict(response.data["results"][0])
-
         author = post.author
         expected_data = {
             "id": post.pk,
@@ -92,7 +90,7 @@ class PostTestCase(APITestCase):
             ),
             "created_at": post.created_at.strftime("%Y-%m-%dT%H:%M:%S"),
         }
-        self.assertDictEqual(expected_data, response_data)
+        self.assertDictEqual(expected_data, response.data["results"][0])
 
     def test_retrieve_structure(self):
         post = PostFactory()
@@ -109,7 +107,6 @@ class PostTestCase(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        response_data = dict(response.data)
         expected_data = {
             "id": post.pk,
             "author": {
@@ -122,7 +119,7 @@ class PostTestCase(APITestCase):
             "my_reaction": reaction.value,
             "created_at": post.created_at.strftime("%Y-%m-%dT%H:%M:%S"),
         }
-        self.assertDictEqual(expected_data, response_data)
+        self.assertDictEqual(expected_data, response.data)
 
     def test_retrieve_structure_without_own_reaction(self):
         post = PostFactory()
@@ -133,3 +130,125 @@ class PostTestCase(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["my_reaction"], "")
+    
+    def test_update_own_post(self):
+        post = PostFactory(
+            author=self.user,
+            title="old_title",
+            body="old_body",
+        )
+
+        new_data = {
+            "title": "new_title",
+            "body": "new_body",
+        }
+        response = self.client.patch(
+            path=f"{self.url}{post.pk}/",
+            data=new_data,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(response.data["title"], new_data["title"])
+        self.assertEqual(response.data["body"], new_data["body"])
+
+        post.refresh_from_db()
+        self.assertEqual(post.title, new_data["title"])
+        self.assertEqual(post.body, new_data["body"])
+
+    def test_try_to_update_other_post(self):
+        post = PostFactory(
+            title="old_title",
+            body="old_body",
+        )
+
+        new_data = {
+            "title": "new_title",
+            "body": "new_body",
+        }
+        response = self.client.patch(
+            path=f"{self.url}{post.pk}/",
+            data=new_data,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertNotIn("title", response.data)
+        self.assertNotIn("body", response.data)
+
+        post.refresh_from_db()
+        self.assertEqual(post.title, "old_title")
+        self.assertEqual(post.body, "old_body")
+    
+    def test_update_own_post_with_put(self):
+        post = PostFactory(
+            author=self.user,
+            title="old_title",
+            body="old_body",
+        )
+
+        new_data = {
+            "title": "new_title",
+            "body": "new_body",
+        }
+        response = self.client.put(
+            path=f"{self.url}{post.pk}/",
+            data=new_data,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(response.data["title"], new_data["title"])
+        self.assertEqual(response.data["body"], new_data["body"])
+
+        post.refresh_from_db()
+        self.assertEqual(post.title, new_data["title"])
+        self.assertEqual(post.body, new_data["body"])
+    
+    def test_try_to_update_other_post_with_put(self):
+        post = PostFactory(
+            title="old_title",
+            body="old_body",
+        )
+
+        new_data = {
+            "title": "new_title",
+            "body": "new_body",
+        }
+        response = self.client.put(
+            path=f"{self.url}{post.pk}/",
+            data=new_data,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertNotIn("title", response.data)
+        self.assertNotIn("body", response.data)
+
+        post.refresh_from_db()
+        self.assertEqual(post.title, "old_title")
+        self.assertEqual(post.body, "old_body")
+    
+    def test_delete_post(self):
+        post = PostFactory(
+            author=self.user,
+            title="old_title",
+            body="old_body",
+        )
+        response = self.client.delete(
+            path=f"{self.url}{post.pk}/",
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Post.objects.all().count(), 0)
+
+    def test_try_to_delete_other_post(self):
+        post = PostFactory(
+            title="old_title",
+            body="old_body",
+        )
+        response = self.client.delete(
+            path=f"{self.url}{post.pk}/",
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
